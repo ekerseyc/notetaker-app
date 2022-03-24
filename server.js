@@ -5,7 +5,7 @@ const path = require('path');
 // executes express
 const app = express();
 // port number that shouldn't change at all, all caps PORT will keep it this way
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // *IMPORTANT!* middleware = what happens between request and response on server
 // serves a static directory called public. will expose the public directory to the internet
