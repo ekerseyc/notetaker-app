@@ -1,27 +1,66 @@
-// requires express.js and path (a built in module to join paths)
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const { json } = require('express/lib/response');
+const uuid = require('./helper/uuid');
 
-// executes express
+
 const app = express();
-// port number that shouldn't change at all, all caps PORT will keep it this way
 const PORT = process.env.PORT || 3001;
 
-// *IMPORTANT!* middleware = what happens between request and response on server
-// serves a static directory called public. will expose the public directory to the internet
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({
-  extended:true
+  extended: true
 }));
 
-app.get('*', (req, res)=> {
+app.get('/api/notes', (req, res) => {
+  fs.readFile('./db/db.json', 'utf-8', function (err, data) {
+    console.log('data loaded', JSON.parse(data))
+    res.json(JSON.parse(data))
+  })
+})
+
+app.post('/api/notes', (req, res) => {
+  console.info(`${req.method} request received to add a note`);
+  const { title, text } = req.body;
+
+  if (title && text) {
+    const note = {
+      title,
+      text,
+      review_id: uuid()
+    };
+
+    const noteString = JSON.stringify(note);
+
+    fs.writeFile(`./db/db${ note.title }.json`, noteString, (err) =>
+      err
+        ? console.error(err)
+        : console.log(`New note ${note.text} has been written to JSON file`
+        )
+    );
+
+    const response = {
+      status: 'success',
+      body: note,
+    };
+
+    console.log(response);
+    res.status(201).json(response);
+  } else {
+    res.status(500).json('Error in creating note');
+  }
+});
+
+app.get('/notes', (req, res) => {
+  res.sendFile(path.join(__dirname, '/public/notes.html'));
+})
+
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '/public/index.html'));
 })
 
 app.listen(PORT, () =>
-// console.log(DIR)
-  console.log(`Example app listening at http://localhost:${PORT}`)
+  console.log(`listening at http://localhost:${PORT}`)
 );
-
-// npm start (looks for index.js, server.js, app.js)
