@@ -1,9 +1,8 @@
+// let Notes = {};
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { json } = require('express/lib/response');
 const uuid = require('./helper/uuid');
-
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,36 +13,71 @@ app.use(express.urlencoded({
   extended: true
 }));
 
+// get the notes from db.json
 app.get('/api/notes', (req, res) => {
-  fs.readFile('./db/db.json', 'utf-8', function (err, data) {
-    console.log('data loaded', JSON.parse(data))
-    res.json(JSON.parse(data))
-  })
+  fs.readFile('./db/db.json', 'utf-8', (err, data) => {
+    res.status(200).json(JSON.parse(data))
+  console.info(`${req.method} request recieved to GET notes!`)
+  }
+  );
 })
 
+// delete a note from db.json
+app.delete('/api/notes/:id', (req, res) => { 
+  const filteredNotes = [];
+  fs.readFile('./db/db.json', 'utf-8', (err, data) => {
+    console.info(`delete request called`)
+    console.log(req.params.id);
+    let noteNote = JSON.parse(data);
+    for (let i = 0; i < noteNote.length; i++) {
+     if (noteNote[i].id !== req.params.id) {
+     filteredNotes.push(noteNote[i]);
+    }}
+    console.log(filteredNotes);
+    
+    fs.writeFile('./db/db.json', JSON.stringify(filteredNotes, null, 2),
+          (writeErr) =>
+            writeErr
+              ? console.error(writeErr)
+              : console.info('Sucessfully deleted a note!')
+        );
+    
+        res.send('body');
+  })
+  
+})
+
+// post new note to db.json
 app.post('/api/notes', (req, res) => {
   console.info(`${req.method} request received to add a note`);
   const { title, text } = req.body;
 
   if (title && text) {
-    const note = {
+    const newNote = {
       title,
       text,
-      review_id: uuid()
+      id: uuid()
     };
+    fs.readFile('./db/db.json', 'utf8', (err, data) => {
+      if (err) {
+        console.err(err);
+      } else {
+        console.log(data);
+        const parsedNotes = JSON.parse(data);
+       parsedNotes.push(newNote);
 
-    const noteString = JSON.stringify(note);
-
-    fs.writeFile(`./db/db${ note.title }.json`, noteString, (err) =>
-      err
-        ? console.error(err)
-        : console.log(`New note ${note.text} has been written to JSON file`
-        )
-    );
+        fs.writeFile('./db/db.json', JSON.stringify(parsedNotes, null, 2),
+          (writeErr) =>
+            writeErr
+              ? console.error(writeErr)
+              : console.info('Sucessfully wrote a new note!')
+        );
+      }
+    })
 
     const response = {
-      status: 'success',
-      body: note,
+      status: 'Success!',
+      body: newNote
     };
 
     console.log(response);
